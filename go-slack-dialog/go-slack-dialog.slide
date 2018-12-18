@@ -16,7 +16,7 @@ Takatada Yoshima
 
 * Slack Dialogs
 
-Slack上でユーザにフォームによる入力インタフェースを提供する仕組み
+Slack上でフォームによる入力インタフェースを提供する仕組み
 
 Smaple: Coffeebot
 https://github.com/shiimaxx/slack-coffeebot
@@ -33,15 +33,6 @@ https://github.com/shiimaxx/slack-coffeebot
 開発者目線
 
 - ある程度構造化されたデータを一度に受け取れるので、Slack Appでも複雑なことをしやすい
-
-
-* トピック
-
-- 処理の流れ
-- Slack Client Library
-- リクエストのエンドポイント
-- フォームの入力検証
-- メイン処理とレスポンス
 
 
 * 処理の流れ - Dialogの呼び出し
@@ -69,12 +60,11 @@ https://github.com/shiimaxx/slack-coffeebot
 .link https://github.com/nlopes/slack nlopes/slack
 
 - GoのメジャーなSlackクライアントライブラリ
-- 2018/12/18時点の最新バージョンはv0.4.0
-- ⚠ v0.4.0では、Dialogs関連のAPIはEXPERIMENTAL ⚠
-- リクエスト(JSON)のパースに使うstructである `slack.InteractionCallback` がv0.4.0以降に追加されているので、自分が作ったときはその時点のmasterブランチのHEADを利用
+- ⚠ 2018/12/18時点の最新バージョンv0.4.0ではDialogs関連のAPIはEXPERIMENTAL ⚠
+- リクエスト(JSON)のパースに使う `slack.InteractionCallback` という割と重要なstructがv0.4.0以降に追加されている
 
 
-* リクエストのエンドポイント
+* リクエストのエンドポイントの処理
 
 Goのアプリケーションでは、Slackから以下のタイミングで送られるリクエストを受ける
 
@@ -82,7 +72,14 @@ Goのアプリケーションでは、Slackから以下のタイミングで送�
 - Dialogフォームの入力データを送信
 
 JSONの構造が異なるリクエストだが、同じエンドポイントで受ける必要がある
+
+
+* リクエストのエンドポイントの処理
+
 `slack.InteractionCallback` はどちらのJSONデータでもパースできるようになっているstructなのでこれを使う
+(Slash Commandで送られるリクエストには未対応ぽい)
+
+どのタイミングで送られたリクエストかは、`type` フィールドで判別する
 
 .code src/handler.go
 
@@ -104,7 +101,7 @@ Dialogフォームの入力データが送信され、Goのアプリケーショ
 
 * メイン処理とレスポンス
 
-Dialogフォームの入力データを受信後、以下のいずれかのタイミングでレスポンスを返す
+Dialogフォームの入力データを受信後、以下のいずれかでレスポンスを返す
 
 - 3秒以内にリクエストに対してレスポンス
 - リクエストデータの `response_url` フィールドに含まれるURLに遅延レスポンス
@@ -117,7 +114,7 @@ Goであればメインの処理をGoroutineで実行して、レスポンスは
 
 * 最後に
 
-Go Advent Calendar 2018 12日目の下記エントリにもう少し詳しく書いてありますので、もしよかったらご覧いただければと思います
+以下のエントリでもう少し詳しく書いてます
 
 .link https://shiimaxx.hatenablog.com/entry/go-dialogs-slack-app GoでDialogsを使ったSlack Appを作る
 

@@ -1,0 +1,124 @@
+GoでDialogsを使ったSlack Appを作る
+golang.tokyo #20
+18 Dec 2018
+
+Takatada Yoshima
+@shiimaxx
+
+
+* About me
+
+.image images/shiimaxx.png
+
+- Takatada Yoshima / @shiimaxx
+- Infrastructure Engineer
+
+
+* Slack Dialogs
+
+Slack上でユーザにフォームによる入力インタフェースを提供する仕組み
+
+Smaple: Coffeebot
+https://github.com/shiimaxx/slack-coffeebot
+
+.image images/demo.gif 430 _
+
+
+* 何がうれしいか
+
+ユーザ目線
+
+- フォームベースの見慣れた入力インタフェースがSlack上で使える
+
+開発者目線
+
+- ある程度構造化されたデータを一度に受け取れるので、アプリケーションで複雑なことをしやすい
+
+
+* トピック
+
+- 処理の流れ
+- Slack Client Library
+- リクエストのエンドポイント
+- フォームの入力検証
+- メイン処理とレスポンス
+
+
+* 処理の流れ - Dialogの呼び出し
+
+.image images/flow1.png
+
+
+* 処理の流れ - Dialogフォームの表示
+
+.image images/flow2.png
+
+
+* 処理の流れ - Dialogフォームの入力データを送信
+
+.image images/flow3.png
+
+
+* 処理の流れ - メイン処理とレスポンス
+
+.image images/flow4.png
+
+
+* Slack Client Library
+
+.link https://github.com/nlopes/slack nlopes/slack
+
+- GoのメジャーなSlackクライアントライブラリ
+- 2018/12/18時点の最新バージョンはv0.4.0
+- ⚠ v0.4.0では、Dialogs関連のAPIはEXPERIMENTAL ⚠
+- レスポンス(JSON)のパースに使う割と重要なstructがv0.4.0以降に追加されているので、自分が作ったときはその時点のmasterブランチのHEADを利用
+
+
+* リクエストのエンドポイント
+
+Slackから以下のタイミングで送られるリクエストを受けるエンドポイント
+
+- Dialogの呼び出し(Slash Command or Button/Menu)
+- Dialogフォームの入力データを送信
+
+JSONの構造が異なるリクエストだが、同じエンドポイントで受ける
+`slack.InteractionCallback` はどちらのJSONデータでもパースできるようになっているstructなのでこれを使う
+
+.code src/handler.go
+
+
+* フォームの入力検証
+
+Dialogフォームの入力データを送信されると、そのリクエストを処理するタイミングでフォームの入力検証と入力エラーの通知が行える
+エラーがある場合は次の形式のJSONデータを 200 OK で返す
+
+.code src/validationError.go
+
+
+* フォームの入力検証
+
+正しくレスポンスが返されるとフォームのエラー箇所にメッセージが表示される
+
+.image images/form_error.png
+
+
+* メイン処理とレスポンス
+
+フォームデータを受信後、以下のいずれかのタイミングでレスポンスを返す
+
+- 3秒以内にリクエストに対してレスポンス
+- リクエストデータの `response_url` フィールドに含まれるURLに遅延レスポンス
+
+後者はメイン処理に時間がかかる場合に有効
+Goであればメインの処理をGoroutineで実行して、レスポンスは即時返すということができる
+
+.code src/response.go
+
+
+* 最後に
+
+Go Advent Calendar 2018 12日目の下記エントリにもう少し詳しく書いてありますので、もしよかったらご覧いただければと思います
+
+.link https://shiimaxx.hatenablog.com/entry/go-dialogs-slack-app GoでDialogsを使ったSlack Appを作る
+
+.image images/preview.png 700 _

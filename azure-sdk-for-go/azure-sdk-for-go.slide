@@ -1,0 +1,209 @@
+Azure SDK for Go
+Go(Un)Conference（Goあんこ）LT大会 5kg
+31 Jan 2019
+
+Takatada Yoshima
+@shiimaxx
+
+
+* About me
+
+.image images/shiimaxx.png
+
+- Takatada Yoshima / @shiimaxx
+- Infrastructure Engineer
+
+
+* Agenda
+
+- Azure Monitor
+- Azure SDK for Go
+- Goアプリケーション上でAzure Monitorを扱う
+
+
+* Azure Monitor
+
+
+* Azure Monitor
+
+Microsoft Azureのモニタリングサービス
+
+.image images/azure-monitor.png 500 _
+
+
+* Azure Monitor
+
+- Azure/オンプレミス上の各種リソースをデータソースとしてそれらのログやメトリックを保存するデータストア
+- そのデータを元に可視化、分析、アラーティングなどを行う機能
+
+を提供しているサービス
+
+
+* Azure Monitor - Alerts
+
+Azure Monitorのアラーティング機能では、Alert RuleとActionを定義する
+
+Alert Rule:
+ターゲットリソース、シグナル(ターゲットリソースから生成されるログ、メトリックなど)とそのアラート基準からなる
+
+Acrtion:
+アラートルールの条件を満たしたときに実行される
+
+
+* Azure Monitor - Alert
+
+発生したアラートはステータスを持ち、ユーザはそのステータスを管理することができる
+
+- New: 新規に発生、未確認
+- Acknowledged: 確認して作業開始済み
+- Closed: 解決済み
+
+
+* Azure SDK for Go
+
+
+* Azure SDK for Go
+
+Azure APIのGo SDK
+
+.link https://github.com/Azure/azure-sdk-for-go Github - Azure/azure-sdk-for-go
+
+
+* Azure SDK for Go - Versioning
+
+SDKバージョンとService APIバージョンという2つのバージョニングの概念がある
+
+
+* Azure SDK for Go - SDKバージョン
+
+SDK自体のバージョン、Gitタグによって表される
+Semantic Versioningであり、メジャーバージョンの変更以外でのBreaking Changeはない
+
+
+* Azure SDK for Go - Service APIバージョン
+
+Azure APIのバージョン、 `YYYY-MM-DD` 形式の日付文字列で表される
+バージョンはserviceモジュール配下のインポートパスの一部になっている
+
+ex)
+`"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"`
+
+インポートパスによってService APIバージョンを固定しておくことで、Azure API側の変更の影響を避けられる
+
+
+* Azure SDK for Go - 利用の流れ
+
+利用するサービス(Compute, Networkなど)のパッケージをインポート
+
+    import "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+
+サービスクライアントを作成
+
+    vmClient := compute.NewVirtualMachinesClient(<subscription id>)
+
+サービスクライアントにAuthorizerを設定
+
+    a, err := auth.NewAuthorizerFromEnvironment()
+    if err == nil {
+        vmClient.Authorizer = a
+    }
+
+メソッド呼び出し
+
+    vmClient.Get(context.TODO(), <resource group name>, <virtual machine name>)
+
+
+* Azure SDK for Go - 利用の流れ
+
+利用するサービス(Compute, Networkなど)のパッケージをインポート
+
+    import "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
+
+サービスクライアントを作成
+
+    vmClient := compute.NewVirtualMachinesClient(<subscription id>)
+
+*サービスクライアントにAuthorizerを設定*
+
+    a, err := auth.NewAuthorizerFromEnvironment()
+    if err == nil {
+        vmClient.Authorizer = a
+    }
+
+メソッド呼び出し
+
+    vmClient.Get(context.TODO(), <resource group name>, <virtual machine name>)
+
+
+* Azure SDK for Go - Authentication
+
+Azure SDK for Goでは認証方法をいくつかのタイプから選択できる
+
+認証タイプは、サービスクライアントの `Authorizer` フィールドにセットする値によって変わる
+
+github.com/Azure/go-autorest/autorest/azure/authパッケージの関数を使う
+
+
+* Azure SDK for Go - Authentication
+
+    a, err := auth.NewAuthorizerFromEnvironment()
+    if err == nil {
+        vmClient.Authorizer = a
+    }
+
+`auth.NewAuthorizerFromEnvironment()` は環境変数から認証に必要な設定を読み込むメソッド
+
+他にも
+
+- ファイルから読み込む `auth.NewAuthorizerFromFile()`
+- Azure CLIで取得する `auth.NewAuthorizerFromCLI()`
+
+などがある
+
+
+* Azure Monitorのアラーティング機能で発生したアラートを取得
+
+パッケージをインポート
+
+    import "github.com/Azure/azure-sdk-for-go/services/alertsmanagement/mgmt/2018-05-05/alertsmanagement"
+
+サービスクライアントを作成
+
+    alertsClient := alertsmanagement.NewAlertsClientWithBaseURI("https://management.azure.com", subscriptionID)
+
+サービスクライアントにAuthorizerを設定
+
+    a, err := auth.NewAuthorizerFromEnvironment()
+    if err == nil {
+        alertsClient.Authorizer = a
+    }
+
+
+* Azure Monitorのアラーティング機能で発生したアラートを取得
+
+メソッド呼び出し
+
+    result, err := client.GetAll(
+        context.TODO(),
+        "",
+        "",
+        "",
+        "",
+        alertsmanagement.Fired,
+        alertsmanagement.Severity(""),
+        alertsmanagement.AlertStateNew,
+        "",
+        "",
+        &f,
+        &f,
+        nil,
+        alertsmanagement.AlertsSortByFieldsLastModifiedDateTime,
+        "desc",
+        "",
+        "",
+        "",
+    )
+
+
+* まとめ
+

@@ -1,4 +1,4 @@
-Azure SKD for GoでAzure Monitorのアラートを取得する
+Azure SKD for GoでAzure Monitorを使う
 Go(Un)Conference（Goあんこ）LT大会 5kg
 31 Jan 2019
 
@@ -18,7 +18,7 @@ Takatada Yoshima
 
 - Azure Monitor
 - Azure SDK for Go
-- Goアプリケーション上でAzure Monitorを扱う
+- Azure SDK for GoでAzure Monitorを使う
 
 
 * Azure Monitor
@@ -28,7 +28,8 @@ Takatada Yoshima
 
 Microsoft Azureのモニタリングサービス
 
-.image images/azure-monitor.png 500 _
+.image images/azure-monitor.png 450 _
+.caption [[https://docs.microsoft.com/en-us/azure/azure-monitor/overview][Azure Monitor overview]]
 
 
 * Azure Monitor
@@ -103,6 +104,8 @@ ex)
 
 サービスクライアントにAuthorizerを設定
 
+    import "github.com/Azure/go-autorest/autorest/azure/auth"
+
     a, err := auth.NewAuthorizerFromEnvironment()
     if err == nil {
         vmClient.Authorizer = a
@@ -125,6 +128,8 @@ ex)
 
 *サービスクライアントにAuthorizerを設定*
 
+    import "github.com/Azure/go-autorest/autorest/azure/auth"
+
     a, err := auth.NewAuthorizerFromEnvironment()
     if err == nil {
         vmClient.Authorizer = a
@@ -139,9 +144,9 @@ ex)
 
 Azure SDK for Goでは認証方法をいくつかのタイプから選択できる
 
-認証タイプは、サービスクライアントの `Authorizer` フィールドにセットする値によって変わる
+認証タイプは、サービスクライアントにセットするAuthorizerによって変わる
 
-github.com/Azure/go-autorest/autorest/azure/authパッケージの関数を使う
+Authorizerを作成する関数は、github.com/Azure/go-autorest/autorest/azure/authパッケージで提供されている
 
 
 * Azure SDK for Go - Authentication
@@ -151,25 +156,38 @@ github.com/Azure/go-autorest/autorest/azure/authパッケージの関数を使�
         vmClient.Authorizer = a
     }
 
-`auth.NewAuthorizerFromEnvironment()` は環境変数から認証に必要な設定を読み込むメソッド
+`auth.NewAuthorizerFromEnvironment()` は認証情報を環境変数から読み込む
 
 他にも
 
-- ファイルから読み込む `auth.NewAuthorizerFromFile()`
-- Azure CLIで取得する `auth.NewAuthorizerFromCLI()`
+- 認証情報をファイルから読み込む → `auth.NewAuthorizerFromFile()`
+- Azure CLIで認証 → `auth.NewAuthorizerFromCLI()`
 
 などがある
+
+
+* Azure SDK for GoでAzure Monitorを使ってみる
+
+
+* Azure SDK for GoでAzure Monitorを使ってみる - モチベーション
+
+- アラーティング機能のアラートステータスをチェックするNagiosプラグインを作りたい
+- AzureリソースのメトリックをAzure Monitorから取得したい
 
 
 * Azure Monitorのアラーティング機能で発生したアラートを取得
 
 パッケージをインポート
 
-    import "github.com/Azure/azure-sdk-for-go/services/alertsmanagement/mgmt/2018-05-05/alertsmanagement"
+    import (
+        ...
+        "github.com/Azure/azure-sdk-for-go/services/alertsmanagement/mgmt/2018-05-05/alertsmanagement"
+        "github.com/Azure/go-autorest/autorest/azure/auth"
+    )
 
 サービスクライアントを作成
 
-    alertsClient := alertsmanagement.NewAlertsClientWithBaseURI("https://management.azure.com", subscriptionID)
+    alertsClient := alertsmanagement.NewAlertsClient(subscriptionID)
 
 サービスクライアントにAuthorizerを設定
 
@@ -181,9 +199,10 @@ github.com/Azure/go-autorest/autorest/azure/authパッケージの関数を使�
 
 * Azure Monitorのアラーティング機能で発生したアラートを取得
 
-メソッド呼び出し
+メソッド呼び出し　(このメソッドは引数が多い、かつデフォルトでよいものも空値を指定する必要があるので使い勝手があまりよくないですね...)
 
-    result, err := client.GetAll(
+    f := false
+    result, err := alertsClient.GetAll(
         context.TODO(),
         "",
         "",
@@ -205,5 +224,22 @@ github.com/Azure/go-autorest/autorest/azure/authパッケージの関数を使�
     )
 
 
+* Azure Monitorのアラーティング機能で発生したアラートを取得
+
+アラートのタイプ、該当するAlert Ruleの名前、ターゲットリソースのリソースグループなどの情報を取得できる
+
+    $ go run get_alert.go
+    Type:  Microsoft.AlertsManagement/alerts
+    Name:  アラートテスト
+    ResourceGroup:  demo-rg
+
+
 * まとめ
 
+Azure MonitorはAzure/オンプレミス上のメトリック、ログを保存し、それ利用する様々な機能(可視化、アラーティングなど)を提供する
+
+Azure SDK for GoはAzure API用のGo SDK
+サービスクライアントを作成 → Authorizerを設定 → メソッド呼び出し という流れで利用する
+
+Azure SDK for Goを使ってAzure MonitorのAPIからアラート情報を取得してみた
+SDKのAPIは一部使いづらい部分があるので、独自の関数やパッケージなどでラップしてあげるのがよさそう
